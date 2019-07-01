@@ -17,6 +17,9 @@ defmodule Math do
   # matching the pattern for function zero?(0) implies the arg was an integer
   # here we use is_integer to check the type. (throws error)
   def zero?(x) when is_integer(x), do: false
+
+  def odd?(rem(a, 2) == 1), do: true
+  def odd?(a), do: false
 end
 
 # Kernel.inspect() turns anything in to a string
