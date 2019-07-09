@@ -22,7 +22,9 @@ defmodule KV.BucketTest do
     KV.Bucket.put(bucket, "milk", 3)
     assert KV.Bucket.get(bucket, "milk") == 3
 
-    assert KV.Bucket.delete(bucket, "milk") == 3  # return value of deleted key
-    assert KV.Bucket.delete(bucket, "milk") == nil  # check that it is gone
+    # return value of deleted key
+    assert KV.Bucket.delete(bucket, "milk") == 3
+    # check that it is gone
+    assert KV.Bucket.delete(bucket, "milk") == nil
   end
 end

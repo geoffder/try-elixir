@@ -1,9 +1,8 @@
 defmodule Stack do
   use GenServer
 
-  # Callbacks
-
-  @impl true
+  # Callbacks (init is the only REQUIRED one)
+  @impl true  # indicates this is a callback implementation
   def init(stack) do
     {:ok, stack}
   end
@@ -25,4 +24,13 @@ defmodule Stack do
 end
 
 # Start the server
-{:ok, pid} = GenServer.start_link(Stack, [:hello])
+{:ok, stack_pid} = GenServer.start_link(Stack, [:hello])
+
+# Example client actions (interacting with the server)
+
+# GenServer.call -> matching handle_call callback implemented in Stack
+IO.puts inspect GenServer.call(stack_pid, :pop)  # => :hello
+
+IO.puts inspect GenServer.cast(stack_pid, {:push, :world})  # => :ok
+
+IO.puts inspect GenServer.call(stack_pid, :pop)  # => :world

@@ -47,9 +47,12 @@ defmodule KV.Bucket do
   action is done, which may cause some clients to timeout.
   """
   def sleepy_delete(bucket, key) do
-    Process.sleep(1000)  # puts client to sleep (not in sub-process yet)
+    # puts client to sleep (not in sub-process yet)
+    Process.sleep(1000)
+
     Agent.get_and_update(bucket, fn dict ->
-      Process.sleep(1000)  # puts server to sleep (within agent sub-process)
+      # puts server to sleep (within agent sub-process)
+      Process.sleep(1000)
       Map.pop(dict, key)
     end)
   end
