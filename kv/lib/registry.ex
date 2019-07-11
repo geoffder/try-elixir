@@ -4,15 +4,20 @@ defmodule KV.Registry do
   # Callbacks
 
   @impl true
-  def init(stack) do
+  def init(:ok) do
     # initialize the state
-    {:ok, stack}
+    {:ok, %{}}
   end
 
   @impl true
   def handle_call({:lookup, name}, _from, names) do
     # don't care where it came from here, GenServer handles the reply
     {:reply, Map.fetch(names, name), names}
+  end
+
+  @impl true
+  def handle_call({:list_names}, _from, names) do
+    {:reply, (for pair <- names, do: elem(pair, 0)), names}
   end
 
   @impl true
@@ -35,6 +40,7 @@ defmodule KV.Registry do
   @doc """
   Starts the registry.
   __MODULE__ means the current module.
+  Returns {:ok, registry_pid} on success.
   """
   def start_link(opts) do
     GenServer.start_link(__MODULE__, :ok, opts)
@@ -49,7 +55,15 @@ defmodule KV.Registry do
   end
 
   @doc """
-  Ensures there is a bucket associated with the given `name` in `server`.
+  Returns a list of the named processes in the registry
+  """
+  def list_names(server) do
+    GenServer.call(server, {:list_names})
+  end
+
+  @doc """
+  Create a bucket associated with the given `name` in `server`.
+  No reply (return) is generated for the client.
   """
   def create(server, name) do
     GenServer.cast(server, {:create, name})
