@@ -1,5 +1,11 @@
 defmodule KV.Bucket do
-  use Agent
+  @moduledoc """
+  This option tells the DynamicSupervisor watching these buckets that these
+  Agent processes are intended to be temporary, so when one crashes it won't
+  be restarted. If they were, we'd end up with buckets that are not included
+  in the registry (so useless).
+  """
+  use Agent, restart: :temporary
 
   @doc """
   Starts a new bucket

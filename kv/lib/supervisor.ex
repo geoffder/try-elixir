@@ -21,11 +21,18 @@ defmodule KV.Supervisor do
   @doc """
   Only one child -> KV.Registry, and our strategy :one_for_one dicates that if
   one of the children fails, only that child will be restarted.
+
+  We use a DynamicSupervisor to watch over our buckets, since we don't know
+  what, and how many, the children of the supervisor will be. See KV.Registry
+  for how this is used to replace the start_link pattern used previously. If
+  a bucket spawned with start_link were to crash, it would have brought down
+  the whole registry, losing all of our state.
   """
   @impl true
   def init(:ok) do
     children = [
-      {KV.Registry, name: KV.Registry}
+      {KV.Registry, name: KV.Registry},
+      {DynamicSupervisor, name: KV.BucketSupervisor, strategy: :one_for_one}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

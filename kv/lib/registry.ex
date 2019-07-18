@@ -55,7 +55,13 @@ defmodule KV.Registry do
         {:noreply, {names, refs}}
 
       false ->
-        {:ok, bucket} = KV.Bucket.start_link([])
+        {:ok, bucket} =
+          DynamicSupervisor.start_child(
+            KV.BucketSupervisor,
+            KV.Bucket
+          )
+
+        # get a reference for the process (to match against :DOWN message)
         ref = Process.monitor(bucket)
 
         # update state Maps
