@@ -19,8 +19,10 @@ defmodule KV.Supervisor do
   end
 
   @doc """
-  Only one child -> KV.Registry, and our strategy :one_for_one dicates that if
-  one of the children fails, only that child will be restarted.
+  Only one child -> KV.Registry, and our strategy :one_for_all dicates that if
+  one of the children fails, we will kill and restart ALL of the children.
+  The buckets and the registry are useless without the other, so this makes
+  sense. :one_for_one could leave you with orphan processes.
 
   We use a DynamicSupervisor to watch over our buckets, since we don't know
   what, and how many, the children of the supervisor will be. See KV.Registry
@@ -35,6 +37,6 @@ defmodule KV.Supervisor do
       {DynamicSupervisor, name: KV.BucketSupervisor, strategy: :one_for_one}
     ]
 
-    Supervisor.init(children, strategy: :one_for_one)
+    Supervisor.init(children, strategy: :one_for_all)
   end
 end
