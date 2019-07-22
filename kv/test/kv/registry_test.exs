@@ -1,21 +1,24 @@
 defmodule KV.RegistryTest do
   use ExUnit.Case
 
-  setup do
+  setup context do
     # rather than using Registry's start_link/1, use the start_supervised!/2
     # function (optional initial state value is second arg, default: [])
     # injected by ExUnit.Case. This ensures that the service is stopped before
     # running the next test (great in case they access the same things).
-    registry = start_supervised!(KV.Registry)
-    %{registry: registry}
+
+    # This is updated for use with the ETS version of Registry.
+    # Since each test has a unique name, we use that to name each registry.
+    _ = start_supervised!({KV.Registry, name: context.test})
+    %{registry: context.test}
   end
 
   test "registers processes", %{registry: registry} do
     # create a bucket process named "cart"
-    KV.Registry.create(registry, "cart")
+    _ = KV.Registry.create(registry, "cart")
 
     # attempting to create existing process does nothing (no error)
-    KV.Registry.create(registry, "cart")
+    _ = KV.Registry.create(registry, "cart")
 
     # new bucket process
     KV.Registry.create(registry, "wishlist")

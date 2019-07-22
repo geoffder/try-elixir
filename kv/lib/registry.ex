@@ -6,7 +6,7 @@ defmodule KV.Registry do
   access buckets (thus would need to make calls to the registry to get pids).
   """
   use GenServer
-
+  import Ex2ms
   ## Client API
 
   @doc """
@@ -21,10 +21,12 @@ defmodule KV.Registry do
 
   @doc """
   Create a bucket associated with the given `name` in `server`.
-  No reply (return) is generated for the client.
+  Note the switch from cast -> call. Use synchronous call to avoid potential
+  race conditions where a bucket is accessed before it has actually been
+  created by an asynchronous cast.
   """
   def create(server, name) do
-    GenServer.cast(server, {:create, name})
+    GenServer.call(server, {:create, name})
   end
 
   @doc """
@@ -41,12 +43,18 @@ defmodule KV.Registry do
   end
 
   @doc """
-  Get list of all the bucket names tracked by the registry. Use fun2ms to
-  create a query function that can be passed to the select function.
+  Get list of all the bucket names tracked by the registry. Use Ex2ms (Elixir
+  version of :ets.fun2ms) to create a match specification that can be passed
+  to the select function. I want all of the names in this case, so no `when`.
   """
   def list_names(table) do
-    get_names = :ets.fun2ms(fn {name, _pid} -> name end)
-    :ets.select(table, get_names)
+    get_names =
+      fun do
+        {name, _pid} -> name
+      end
+
+    # select will return a reverse chronological list, reverse it back.
+    Enum.reverse(:ets.select(table, get_names))
   end
 
   ## Server Callbacks
@@ -63,27 +71,27 @@ defmodule KV.Registry do
   dynamically supervised bucket, and store it's name, pid, and reference.
   """
   @impl true
-  def handle_cast({:create, name}, {names, refs}) do
+  def handle_call({:create, name}, _from, {names, refs}) do
     case lookup(names, name) do
-      {:ok, _pid} ->
-        {:noreply, {names, refs}}
+      {:ok, bucket_pid} ->
+        {:reply, bucket_pid, {names, refs}}
 
       :error ->
-        {:ok, bucket} =
+        {:ok, bucket_pid} =
           DynamicSupervisor.start_child(
             KV.BucketSupervisor,
             KV.Bucket
           )
 
         # get a reference for the process (to match against :DOWN message)
-        ref = Process.monitor(bucket)
+        ref = Process.monitor(bucket_pid)
         refs = Map.put(refs, ref, name)
 
         # update ETS names table
-        :ets.insert(names, {name, bucket})
+        :ets.insert(names, {name, bucket_pid})
 
         # return the updated names and refs to the server
-        {:noreply, {names, refs}}
+        {:reply, bucket_pid, {names, refs}}
     end
   end
 
