@@ -43,7 +43,20 @@ defmodule KV.RegistryTest do
     {:ok, bucket} = KV.Registry.lookup(registry, "cart")
     Agent.stop(bucket)
 
+    # do a call to ensure that the registry processed the DOWN message
+    _ = KV.Registry.create(registry, "bogus")
     # check that "cart" no longer exists
     assert KV.Registry.lookup(registry, "cart") == :error
+  end
+
+  test "bucket can crash at any time", %{registry: registry} do
+    KV.Registry.create(registry, "shopping")
+    {:ok, bucket} = KV.Registry.lookup(registry, "shopping")
+
+    # Simulate a bucket crash by explicity and synchronously shutting it down
+    Agent.stop(bucket, :shutdown)
+
+    # Now trying to call the dead process causes a :noproc exit
+    catch_exit(KV.Bucket.put(bucket, "milk", 3))
   end
 end
