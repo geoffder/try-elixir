@@ -45,25 +45,47 @@ defmodule KVServer do
   end
 
   defp serve(socket) do
-    # Read line at a time from the accepted socket connection and write the
-    # lines back to the same socket.
+    # msg =
+    #  case read_line(socket) do
+    #    {:ok, data} ->
+    #      case KVServer.Command.parse(data) do
+    #        {:ok, command} ->
+    #          KVServer.Command.run(command)
 
-    # Pipeline equivalent to write_line(read_line(socket), socket), so first
-    # arg is the data moving through the pipe, and we provide the connected
-    # socket as the second argument (to write to).
-    socket
-    |> read_line()
-    |> write_line(socket)
+    #        {:error, _} = err ->
+    #          err
+    #      end
 
+    #    {:error, _} = err ->
+    #      err
+    #  end
+
+    # Rather than the heavily nested case block above, we can achieve the same
+    # thing using the `with` construct in a way that more resembles a a data
+    # pipeline. This retrieves the value returned from the right side of the
+    # <- arrow and matches it against the pattern on the left side. If there
+    # is an expression, `with` moves on to the next expression. If there is no
+    # match, then the non-matching value is returned.
+    msg =
+      with {:ok, data} <- read_line(socket),
+           {:ok, command} <- KVServer.Command.parse(data),
+           do: KVServer.Command.run(command)
+
+    # write the status (and command) back to the client socket
+    write_line(socket, msg)
+
+    # From the guide...
+    # "Note that serve/1 is an infinite loop called sequentially inside
+    # loop_acceptor/1, so the tail call to loop_acceptor/1 is never reached
+    # and could be avoided."
     serve(socket)
   end
 
   defp read_line(socket) do
-    {:ok, data} = :gen_tcp.recv(socket, 0)
-    data
+    :gen_tcp.recv(socket, 0)
   end
 
-  defp write_line(line, socket) do
-    :gen_tcp.send(socket, line)
+  defp write_line(socket, {:ok, text}) do
+    :gen_tcp.send(socket, text)
   end
 end
