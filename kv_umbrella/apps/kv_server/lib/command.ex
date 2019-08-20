@@ -62,7 +62,7 @@ defmodule KVServer.Command do
         {:ok, "OK, #{value} #{key} was placed in #{bucket} bucket.\r\n"}
 
       :error ->
-        :error
+        {:error, :not_found}
     end
   end
 
@@ -78,7 +78,7 @@ defmodule KVServer.Command do
         end
 
       :error ->
-        :error
+        {:error, :not_found}
     end
   end
 
@@ -89,7 +89,7 @@ defmodule KVServer.Command do
         {:ok, "OK, #{key} has been removed from #{bucket} bucket.\r\n"}
 
       :error ->
-        :error
+        {:error, :not_found}
     end
   end
 end

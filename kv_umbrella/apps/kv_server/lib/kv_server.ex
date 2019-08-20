@@ -88,4 +88,23 @@ defmodule KVServer do
   defp write_line(socket, {:ok, text}) do
     :gen_tcp.send(socket, text)
   end
+
+  defp write_line(socket, {:error, :unknown_command}) do
+    :gen_tcp.send(socket, "UNKOWN COMMAND\r\n")
+  end
+
+  defp write_line(_socket, {:error, :closed}) do
+    # Connection was closed, exit politely
+    exit(:shutdown)
+  end
+
+  defp write_line(socket, {:error, :not_found}) do
+    :gen_tcp.send(socket, "ERROR: Bucket lookup failed, not found.\r\n")
+  end
+
+  defp write_line(socket, {:error, error}) do
+    # Unknown error; write to client and exit
+    :gen_tcp.send(socket, "ERROR\r\n")
+    exit(error)
+  end
 end
